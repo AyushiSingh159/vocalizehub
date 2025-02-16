@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VocalizeHub</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; padding: 20px; }
+        #text-container { border: 1px solid #ddd; padding: 15px; margin-bottom: 20px; }
+        button { padding: 10px 15px; margin-right: 10px; }
+        #duration { margin-left: 10px; }
+        #voice-select { margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <h1>VocalizeHub</h1>
+    <div id="text-container">
+        <p id="text-to-read">What impact is my behavior having on the world?
+Consequentialism as the name suggests focuses on the consequences of events. In consequentialism we do what gives us the best consequences that is good is thought prior to right. Consequentialism means one thing that is maximizing pleasure. Another way of describing consequentialism is that actions should be judged right or wrong on the basis of their consequences.
+ Different forms of consequentialism differ over what the good thing is that should be maximized. 
+Utilitarianism states that people should maximize human welfare or well-being (which they used to call 'utility' - hence the name).
+Hedonism stated that people should maximize human pleasure.
+Critics argue that consequentialism can justify morally questionable actions, that means even murders have reasons and hence it cannot be considered as an act of crime. Consequentialism may provide reasons but the main question arises if the act is morally right? If we go on by both totally morals, emotions no act can be considered as wrong-doing, this may weaken the overall judgement process.</p>
+    </div>
+    <select id="voice-select"></select>
+    <button id="read-button"><i class="fas fa-play"></i></button>
+    <button id="pause-button" disabled><i class="fas fa-pause"></i></button>
+    <button id="resume-button" disabled><i class="fas fa-redo"></i></button>
+    <input type="range" id="speed-control" min="0.5" max="2" step="0.1" value="1">
+    <span id="speed-value">1x</span>
+    <span id="duration"></span>
+
+    <script>
+        const textToRead = document.getElementById('text-to-read').innerText;
+        const readButton = document.getElementById('read-button');
+        const pauseButton = document.getElementById('pause-button');
+        const resumeButton = document.getElementById('resume-button');
+        const speedControl = document.getElementById('speed-control');
+        const speedValue = document.getElementById('speed-value');
+        const durationSpan = document.getElementById('duration');
+        const voiceSelect = document.getElementById('voice-select');
+
+        let speech = new SpeechSynthesisUtterance(textToRead);
+        let speaking = false;
+        let paused = false;
+        let voices = [];
+
+        function populateVoiceList() {
+            voices = speechSynthesis.getVoices();
+            voiceSelect.innerHTML = '';
+            voices.forEach((voice, i) => {
+                let option = document.createElement('option');
+                option.textContent = `${voice.name} (${voice.lang})`;
+                option.setAttribute('data-lang', voice.lang);
+                option.setAttribute('data-name', voice.name);
+                voiceSelect.appendChild(option);
+            });
+        }
+
+        populateVoiceList();
+        if (speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = populateVoiceList;
+        }
+
+        readButton.addEventListener('click', () => {
+            if (!speaking && !paused) {
+                speech = new SpeechSynthesisUtterance(textToRead);
+                speech.rate = parseFloat(speedControl.value);
+                
+                let selectedVoice = voiceSelect.selectedOptions[0].getAttribute('data-name');
+                speech.voice = voices.find(voice => voice.name === selectedVoice);
+                
+                window.speechSynthesis.speak(speech);
+                speaking = true;
+                updateButtons();
+                updateDuration();
+            } else if (paused) {
+                window.speechSynthesis.resume();
+                paused = false;
+                updateButtons();
+            }
+        });
+
+        pauseButton.addEventListener('click', () => {
+            window.speechSynthesis.pause();
+            paused = true;
+            updateButtons();
+        });
+
+        resumeButton.addEventListener('click', () => {
+            window.speechSynthesis.resume();
+            paused = false;
+            updateButtons();
+        });
+
+        speedControl.addEventListener('input', () => {
+            const speed = parseFloat(speedControl.value);
+            speedValue.textContent = `${speed.toFixed(1)}x`;
+            speech.rate = speed;
+            if (speaking) {
+                window.speechSynthesis.cancel();
+                speech = new SpeechSynthesisUtterance(textToRead);
+                speech.rate = speed;
+                let selectedVoice = voiceSelect.selectedOptions[0].getAttribute('data-name');
+                speech.voice = voices.find(voice => voice.name === selectedVoice);
+                window.speechSynthesis.speak(speech);
+            }
+        });
+
+        speech.onend = () => {
+            speaking = false;
+            paused = false;
+            updateButtons();
+        };
+
+        function updateButtons() {
+            readButton.disabled = speaking && !paused;
+            pauseButton.disabled = !speaking || paused;
+            resumeButton.disabled = !paused;
+        }
+
+        function updateDuration() {
+            const words = textToRead.trim().split(/\s+/).length;
+            const durationInSeconds = Math.ceil(words / 2);
+            const minutes = Math.floor(durationInSeconds / 60);
+            const seconds = durationInSeconds % 60;
+            durationSpan.textContent = `Estimated duration: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        updateDuration();
+    </script>
+</body>
+</html>
