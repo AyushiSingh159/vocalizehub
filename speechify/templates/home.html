@@ -32,103 +32,107 @@ Critics argue that consequentialism can justify morally questionable actions, th
     <span id="duration"></span>
 
     <script>
-        const textToRead = document.getElementById('text-to-read').innerText;
-        const readButton = document.getElementById('read-button');
-        const pauseButton = document.getElementById('pause-button');
-        const resumeButton = document.getElementById('resume-button');
-        const speedControl = document.getElementById('speed-control');
-        const speedValue = document.getElementById('speed-value');
-        const durationSpan = document.getElementById('duration');
-        const voiceSelect = document.getElementById('voice-select');
+    const textToRead = document.getElementById('text-to-read').innerText;
+    const readButton = document.getElementById('read-button');
+    const pauseButton = document.getElementById('pause-button');
+    const resumeButton = document.getElementById('resume-button');
+    const speedControl = document.getElementById('speed-control');
+    const speedValue = document.getElementById('speed-value');
+    const durationSpan = document.getElementById('duration');
+    const voiceSelect = document.getElementById('voice-select');
 
-        let speech = new SpeechSynthesisUtterance(textToRead);
-        let speaking = false;
-        let paused = false;
-        let voices = [];
+    let speech = new SpeechSynthesisUtterance(textToRead);
+    let speaking = false;
+    let paused = false;
+    let voices = [];
 
-        function populateVoiceList() {
-            voices = speechSynthesis.getVoices();
-            voiceSelect.innerHTML = '';
-            voices.forEach((voice, i) => {
-                let option = document.createElement('option');
-                option.textContent = `${voice.name} (${voice.lang})`;
-                option.setAttribute('data-lang', voice.lang);
-                option.setAttribute('data-name', voice.name);
-                voiceSelect.appendChild(option);
-            });
-        }
-
-        populateVoiceList();
-        if (speechSynthesis.onvoiceschanged !== undefined) {
-            speechSynthesis.onvoiceschanged = populateVoiceList;
-        }
-
-        readButton.addEventListener('click', () => {
-            if (!speaking && !paused) {
-                speech = new SpeechSynthesisUtterance(textToRead);
-                speech.rate = parseFloat(speedControl.value);
-                
-                let selectedVoice = voiceSelect.selectedOptions[0].getAttribute('data-name');
-                speech.voice = voices.find(voice => voice.name === selectedVoice);
-                
-                window.speechSynthesis.speak(speech);
-                speaking = true;
-                updateButtons();
-                updateDuration();
-            } else if (paused) {
-                window.speechSynthesis.resume();
-                paused = false;
-                updateButtons();
-            }
+    function populateVoiceList() {
+        voices = speechSynthesis.getVoices();
+        voiceSelect.innerHTML = '';
+        voices.forEach((voice, i) => {
+            let option = document.createElement('option');
+            option.textContent = `${voice.name} (${voice.lang})`;
+            option.setAttribute('data-lang', voice.lang);
+            option.setAttribute('data-name', voice.name);
+            voiceSelect.appendChild(option);
         });
+    }
 
-        pauseButton.addEventListener('click', () => {
-            window.speechSynthesis.pause();
-            paused = true;
-            updateButtons();
-        });
+    populateVoiceList();
+    if (speechSynthesis.onvoiceschanged !== undefined) {
+        speechSynthesis.onvoiceschanged = populateVoiceList;
+    }
 
-        resumeButton.addEventListener('click', () => {
+    function updateSpeech() {
+        let selectedVoice = voiceSelect.selectedOptions[0].getAttribute('data-name');
+        speech = new SpeechSynthesisUtterance(textToRead);
+        speech.voice = voices.find(voice => voice.name === selectedVoice);
+        speech.rate = parseFloat(speedControl.value);
+    }
+
+    voiceSelect.addEventListener('change', () => {
+        updateSpeech();
+        if (speaking) {
+            window.speechSynthesis.cancel();
+            window.speechSynthesis.speak(speech);
+        }
+    });
+
+    readButton.addEventListener('click', () => {
+        if (!speaking && !paused) {
+            updateSpeech();
+            window.speechSynthesis.speak(speech);
+            speaking = true;
+        } else if (paused) {
             window.speechSynthesis.resume();
             paused = false;
-            updateButtons();
-        });
-
-        speedControl.addEventListener('input', () => {
-            const speed = parseFloat(speedControl.value);
-            speedValue.textContent = `${speed.toFixed(1)}x`;
-            speech.rate = speed;
-            if (speaking) {
-                window.speechSynthesis.cancel();
-                speech = new SpeechSynthesisUtterance(textToRead);
-                speech.rate = speed;
-                let selectedVoice = voiceSelect.selectedOptions[0].getAttribute('data-name');
-                speech.voice = voices.find(voice => voice.name === selectedVoice);
-                window.speechSynthesis.speak(speech);
-            }
-        });
-
-        speech.onend = () => {
-            speaking = false;
-            paused = false;
-            updateButtons();
-        };
-
-        function updateButtons() {
-            readButton.disabled = speaking && !paused;
-            pauseButton.disabled = !speaking || paused;
-            resumeButton.disabled = !paused;
         }
+        updateButtons();
+    });
 
-        function updateDuration() {
-            const words = textToRead.trim().split(/\s+/).length;
-            const durationInSeconds = Math.ceil(words / 2);
-            const minutes = Math.floor(durationInSeconds / 60);
-            const seconds = durationInSeconds % 60;
-            durationSpan.textContent = `Estimated duration: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+    pauseButton.addEventListener('click', () => {
+        window.speechSynthesis.pause();
+        paused = true;
+        updateButtons();
+    });
+
+    resumeButton.addEventListener('click', () => {
+        window.speechSynthesis.resume();
+        paused = false;
+        updateButtons();
+    });
+
+    speedControl.addEventListener('input', () => {
+        const speed = parseFloat(speedControl.value);
+        speedValue.textContent = `${speed.toFixed(1)}x`;
+        updateSpeech();
+        if (speaking) {
+            window.speechSynthesis.cancel();
+            window.speechSynthesis.speak(speech);
         }
+    });
 
-        updateDuration();
+    speech.onend = () => {
+        speaking = false;
+        paused = false;
+        updateButtons();
+    };
+
+    function updateButtons() {
+        readButton.disabled = speaking && !paused;
+        pauseButton.disabled = !speaking || paused;
+        resumeButton.disabled = !paused;
+    }
+
+    function updateDuration() {
+        const words = textToRead.trim().split(/\s+/).length;
+        const durationInSeconds = Math.ceil(words / 2);
+        const minutes = Math.floor(durationInSeconds / 60);
+        const seconds = durationInSeconds % 60;
+        durationSpan.textContent = `Estimated duration: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+
+    updateDuration();
     </script>
 </body>
 </html>
