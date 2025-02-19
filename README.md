@@ -54,18 +54,16 @@ Requirements
 Python 3.9 or higher
 Modern web browser with JavaScript enabled
 
-
-Create a virtual environment:
-python -m venv venv
 Installation
+
 Clone the repository:
 git clone https://github.com/yourusername/vocalizehub.git
 cd vocalizehub
+
 Create a virtual environment:
 python -m venv venv
-Activate the virtual environment:
 
-On Windows:
+Activate the virtual environment:
 venv\Scripts\activate
 
 
