@@ -4,123 +4,206 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VocalizeHub</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js"></script>
+
     <style>
         body { font-family: Arial, sans-serif; line-height: 1.6; padding: 20px; }
         #text-container { border: 1px solid #ddd; padding: 15px; margin-bottom: 20px; }
-        button { padding: 10px 15px; margin-right: 10px; }
-        #duration { margin-left: 10px; }
+
+        .player-container {
+            background-color: #f0f0f0;
+            border-radius: 25px;
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 500px;
+            margin-top: 20px;
+        }
+
+        .play-button {
+            background: none;
+            border: none;
+            font-size: 1.5em;
+            cursor: pointer;
+            padding: 0;
+            margin-right: 10px;
+        }
+
+        .time-display {
+            font-size: 0.9em;
+            color: #333;
+            margin-right: 10px;
+            width: 50px;
+            text-align: center;
+        }
+
+        .progress-bar-container {
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            margin-right: 10px;
+            cursor: pointer;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background-color: #ddd;
+            border-radius: 5px;
+            position: relative;
+        }
+
+        .progress {
+            height: 8px;
+            background-color: #666;
+            border-radius: 5px;
+            width: 0%;
+        }
+
+        .speed-options {
+            display: inline-flex;
+            margin-right: 10px;
+        }
+
+        .speed-button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9em;
+            margin-right: 5px;
+        }
+
+        .speed-button.active {
+            font-weight: bold;
+            color: #3498db;
+        }
     </style>
 </head>
 <body>
     <h1>VocalizeHub</h1>
     <div id="text-container">
-        <p id="text-to-read">What impact is my behavior having on the world?
-        Consequentialism as the name suggests focuses on the consequences of events. In consequentialism we do what gives us the best consequences that is good is thought prior to right. Consequentialism means one thing that is maximizing pleasure. Another way of describing consequentialism is that actions should be judged right or wrong on the basis of their consequences.
-         Different forms of consequentialism differ over what the good thing is that should be maximized. 
-        Utilitarianism states that people should maximize human welfare or well-being (which they used to call 'utility' - hence the name).
-        Hedonism stated that people should maximize human pleasure.
-        Critics argue that consequentialism can justify morally questionable actions, that means even murders have reasons and hence it cannot be considered as an act of crime. Consequentialism may provide reasons but the main question arises if the act is morally right? If we go on by both totally morals, emotions no act can be considered as wrong-doing, this may weaken the overall judgement process.</p>
+        <p id="text-to-read">
+            What impact is my behavior having on the world?
+            Consequentialism as the name suggests focuses on the consequences of events. In consequentialism we do what gives us the best consequences that is good is thought prior to right. Consequentialism means one thing that is maximizing pleasure. Another way of describing consequentialism is that actions should be judged right or wrong on the basis of their consequences.
+            Different forms of consequentialism differ over what the good thing is that should be maximized. 
+            Utilitarianism states that people should maximize human welfare or well-being (which they used to call 'utility' - hence the name).
+            Hedonism stated that people should maximize human pleasure.
+            Critics argue that consequentialism can justify morally questionable actions, that means even murders have reasons and hence it cannot be considered as an act of crime. Consequentialism may provide reasons but the main question arises if the act is morally right? If we go on by both totally morals, emotions no act can be considered as wrong-doing, this may weaken the overall judgement process.
+        </p>
     </div>
-    <button id="read-button"><i class="fas fa-play"></i></button>
-    <button id="pause-button" disabled><i class="fas fa-pause"></i></button>
-    <button id="resume-button" disabled><i class="fas fa-redo"></i></button>
-    <input type="range" id="speed-control" min="0.5" max="2" step="0.1" value="1">
-    <span id="speed-value">1x</span>
-    <span id="duration"></span>
+
+    <div class="player-container">
+        <button class="play-button" id="playButton"><i class="fas fa-play"></i></button>
+        <span class="time-display" id="currentTime">0:00</span> /
+        <span class="time-display" id="totalTime">0:00</span>
+        <div class="progress-bar-container" id="progressBarContainer">
+            <div class="progress-bar">
+                <div class="progress" id="progress"></div>
+            </div>
+        </div>
+        <div class="speed-options">
+            <button class="speed-button" data-speed="0.5">0.5x</button>
+            <button class="speed-button active" data-speed="1">1x</button>
+            <button class="speed-button" data-speed="1.15">1.15x</button>
+            <button class="speed-button" data-speed="1.5">1.5x</button>
+            <button class="speed-button" data-speed="2">2x</button>
+        </div>
+    </div>
 
     <script>
-        const textToRead = document.getElementById('text-to-read').innerText;
-        const readButton = document.getElementById('read-button');
-        const pauseButton = document.getElementById('pause-button');
-        const resumeButton = document.getElementById('resume-button');
-        const speedControl = document.getElementById('speed-control');
-        const speedValue = document.getElementById('speed-value');
-        const durationSpan = document.getElementById('duration');
+        const textToRead = document.getElementById("text-to-read").innerText;
+        const playButton = document.getElementById("playButton");
+        const currentTimeDisplay = document.getElementById("currentTime");
+        const totalTimeDisplay = document.getElementById("totalTime");
+        const progressBar = document.getElementById("progress");
+        const progressBarContainer = document.getElementById("progressBarContainer");
+        const speedButtons = document.querySelectorAll(".speed-button");
 
-        let speech = new SpeechSynthesisUtterance(textToRead);
+        let speech = new SpeechSynthesisUtterance();
         let speaking = false;
-        let paused = false;
+        let currentSpeed = 1;
+        let estimatedDuration = 0;
+        let currentWordIndex = 0;
+        let wordsArray = textToRead.split(/\s+/);
 
-        function setBrianVoice() {
-            const voices = speechSynthesis.getVoices();
-            const brianVoice = voices[104]; 
-            if (brianVoice) {
-                speech.voice = brianVoice;
-                speech.lang = brianVoice.lang;
-                console.log(`Voice set to: ${brianVoice.name}`);
+        function estimateDuration() {
+            const wordsPerMinute = 180;
+            estimatedDuration = (wordsArray.length / wordsPerMinute) * 60;
+            totalTimeDisplay.innerText = formatTime(estimatedDuration);
+        }
+
+        estimateDuration();
+
+        playButton.addEventListener("click", function () {
+            if (!speaking) {
+                startSpeech();
             } else {
-                console.warn("Brian voice not found at index 101.");
+                stopSpeech();
             }
+        });
+
+        function startSpeech() {
+            speech.text = wordsArray.slice(currentWordIndex).join(" ");
+            speech.rate = currentSpeed;
+            window.speechSynthesis.speak(speech);
+            speaking = true;
+            playButton.innerHTML = '<i class="fas fa-pause"></i>';
+            updateProgress();
         }
 
-        if (speechSynthesis.onvoiceschanged !== undefined) {
-            speechSynthesis.onvoiceschanged = setBrianVoice;
+        function stopSpeech() {
+            window.speechSynthesis.cancel();
+            speaking = false;
+            playButton.innerHTML = '<i class="fas fa-play"></i>';
         }
-        setBrianVoice();
 
-        speech.rate = 1;
+        function updateProgress() {
+            let interval = setInterval(() => {
+                let progress = (currentWordIndex / wordsArray.length) * 100;
+                progressBar.style.width = `${progress}%`;
+                let elapsedTime = (estimatedDuration * currentWordIndex) / wordsArray.length;
+                currentTimeDisplay.innerText = formatTime(elapsedTime);
+                if (!speaking) clearInterval(interval);
+            }, 500);
+        }
 
-        readButton.addEventListener('click', () => {
-            if (!speaking && !paused) {
-                speech = new SpeechSynthesisUtterance(textToRead);
-                setBrianVoice();
-                speech.rate = parseFloat(speedControl.value);
-                window.speechSynthesis.speak(speech);
-                speaking = true;
-            } else if (paused) {
-                window.speechSynthesis.resume();
-                paused = false;
-            }
-            updateButtons();
+        speedButtons.forEach(button => {
+            button.addEventListener("click", () => {
+                currentSpeed = parseFloat(button.getAttribute("data-speed"));
+                speech.rate = currentSpeed;
+                estimateDuration();
+                speedButtons.forEach(btn => btn.classList.remove("active"));
+                button.classList.add("active");
+
+                if (speaking) {
+                    window.speechSynthesis.cancel();
+                    startSpeech();
+                }
+            });
         });
 
-        pauseButton.addEventListener('click', () => {
-            window.speechSynthesis.pause();
-            paused = true;
-            updateButtons();
-        });
+        progressBarContainer.addEventListener("click", function (event) {
+            let rect = progressBarContainer.getBoundingClientRect();
+            let clickX = event.clientX - rect.left;
+            let percent = clickX / rect.width;
+            currentWordIndex = Math.floor(wordsArray.length * percent);
+            let newTime = estimatedDuration * percent;
+            currentTimeDisplay.innerText = formatTime(newTime);
+            progressBar.style.width = `${percent * 100}%`;
 
-        resumeButton.addEventListener('click', () => {
-            window.speechSynthesis.resume();
-            paused = false;
-            updateButtons();
-        });
-
-        speedControl.addEventListener('input', () => {
-            const speed = parseFloat(speedControl.value);
-            speedValue.textContent = `${speed.toFixed(1)}x`;
-            speech.rate = speed;
             if (speaking) {
                 window.speechSynthesis.cancel();
-                speech = new SpeechSynthesisUtterance(textToRead);
-                setBrianVoice();
-                speech.rate = speed;
-                window.speechSynthesis.speak(speech);
+                startSpeech();
             }
         });
 
-        speech.onend = () => {
-            speaking = false;
-            paused = false;
-            updateButtons();
-        };
-
-        function updateButtons() {
-            readButton.disabled = speaking && !paused;
-            pauseButton.disabled = !speaking || paused;
-            resumeButton.disabled = !paused;
+        function formatTime(seconds) {
+            let mins = Math.floor(seconds / 60);
+            let secs = Math.floor(seconds % 60);
+            return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
         }
-
-        function updateDuration() {
-            const words = textToRead.trim().split(/\s+/).length;
-            const durationInSeconds = Math.ceil(words / 2 / parseFloat(speedControl.value));
-            const minutes = Math.floor(durationInSeconds / 60);
-            const seconds = durationInSeconds % 60;
-            durationSpan.textContent = `Estimated duration: ${minutes}:${seconds.toString().padStart(2, '0')}`;
-        }
-
-        updateDuration();
     </script>
 </body>
 </html>
