@@ -10,7 +10,6 @@
     <style>
         body { font-family: Arial, sans-serif; line-height: 1.6; padding: 20px; }
         #text-container { border: 1px solid #ddd; padding: 15px; margin-bottom: 20px; max-height: 400px; overflow-y: auto; }
-
         .player-container {
             background-color: #f0f0f0;
             border-radius: 25px;
@@ -21,71 +20,20 @@
             width: 500px;
             margin-top: 20px;
         }
-
-        .play-button {
-            background: none;
-            border: none;
-            font-size: 1.5em;
-            cursor: pointer;
-            padding: 0;
-            margin-right: 10px;
-        }
-
-        .time-display {
-            font-size: 0.9em;
-            color: #333;
-            margin-right: 10px;
-            width: 50px;
-            text-align: center;
-        }
-
-        .progress-bar-container {
-            flex-grow: 1;
-            display: flex;
-            align-items: center;
-            margin-right: 10px;
-            cursor: pointer;
-        }
-
-        .progress-bar {
-            width: 100%;
-            height: 8px;
-            background-color: #ddd;
-            border-radius: 5px;
-            position: relative;
-        }
-
-        .progress {
-            height: 8px;
-            background-color: #666;
-            border-radius: 5px;
-            width: 0%;
-        }
-
-        .speed-options {
-            display: inline-flex;
-            margin-right: 10px;
-        }
-
-        .speed-button {
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 0.9em;
-            margin-right: 5px;
-        }
-
-        .speed-button.active {
-            font-weight: bold;
-            color: #3498db;
-        }
+        .play-button { background: none; border: none; font-size: 1.5em; cursor: pointer; margin-right: 10px; }
+        .time-display { font-size: 0.9em; color: #333; width: 50px; text-align: center; }
+        .progress-bar-container { flex-grow: 1; display: flex; align-items: center; margin-right: 10px; cursor: pointer; }
+        .progress-bar { width: 100%; height: 8px; background-color: #ddd; border-radius: 5px; position: relative; }
+        .progress { height: 8px; background-color: #666; border-radius: 5px; width: 0%; }
+        .speed-options { display: inline-flex; margin-right: 10px; }
+        .speed-button { background: none; border: none; cursor: pointer; font-size: 0.9em; margin-right: 5px; }
+        .speed-button.active { font-weight: bold; color: #3498db; }
     </style>
 </head>
 <body>
     <h1>VocalizeHub</h1>
     <div id="text-container">
-        <p id="text-to-read">
-            This paper reviews the existing literature in support of the research study. The literature reviewed discussed the barriers and success strategies for African American Women to obtain higher education. Also, a discussion of the Critical Race, Social Learning, and Feminist theories was included that formed the understanding of African American female educational development. Despite the growing awareness of the problem in the literature, little attention has been given to studies of overcoming barriers and obstacles to higher education for African American women (Baber, 2012; Charleston, 2012; Felder & Barker, 2013).
+        <p id="text-to-read">This paper reviews the existing literature in support of the research study. The literature reviewed discussed the barriers and success strategies for African American Women to obtain higher education. Also, a discussion of the Critical Race, Social Learning, and Feminist theories was included that formed the understanding of African American female educational development. Despite the growing awareness of the problem in the literature, little attention has been given to studies of overcoming barriers and obstacles to higher education for African American women (Baber, 2012; Charleston, 2012; Felder & Barker, 2013).
 
 The problems of African American students in the sphere of education were traditionally discussed without direct reference to community colleges as a specific educational institution type. In their research, Felder and Barker (2013) studied the African American students’ experiences only in elite and Southern institutions, such as the University of California and Southern States University. There are gaps in the scholarly discussion of the African American students’ barriers, obstacles, and challenges in receiving the Associate degree.
 
@@ -477,8 +425,7 @@ Willis, D. G., Sullivan-Bolyai, S., Knafl, K., & Cohen, M. Z. (2016). Distinguis
 
 Wolfe, B. L., & Dilworth, P. P. (2015). Transitioning normalcy: Organizational culture, African American administrators, and diversity leadership in higher education. Review of Educational Research, 85(4), 667-697.
 
-Zimmer, T. E. (2016). The importance of education for the unemployed. Indiana Business Review, 91(1), 9-16.
-        </p>
+Zimmer, T. E. (2016). The importance of education for the unemployed. Indiana Business Review, 91(1), 9-16.</p>
     </div>
 
     <div class="player-container">
@@ -516,21 +463,22 @@ Zimmer, T. E. (2016). The importance of education for the unemployed. Indiana Bu
         let wordsArray = textToRead.split(/\s+/);
         let wordsPerMinute = 180;
         let wordsPerSecond = wordsPerMinute / 60;
+        let startTime = 0;
+        let elapsedTime = 0;
+        let interval;
 
         function setBrianVoice() {
             let voices = window.speechSynthesis.getVoices();
             if (voices.length > 0) {
-                speech.voice = voices[104] || voices[0]; // Set to Brian (104) or fallback
+                speech.voice = voices[104] || voices[0];
             }
         }
-
         window.speechSynthesis.onvoiceschanged = setBrianVoice;
 
         function estimateDuration() {
             estimatedDuration = (wordsArray.length / wordsPerMinute) * 60;
             totalTimeDisplay.innerText = formatTime(estimatedDuration);
         }
-
         estimateDuration();
 
         playButton.addEventListener("click", function () {
@@ -547,10 +495,12 @@ Zimmer, T. E. (2016). The importance of education for the unemployed. Indiana Bu
             speech.onend = () => {
                 speaking = false;
                 playButton.innerHTML = '<i class="fas fa-play"></i>';
+                clearInterval(interval);
             };
             window.speechSynthesis.speak(speech);
             speaking = true;
             playButton.innerHTML = '<i class="fas fa-pause"></i>';
+            startTime = Date.now() - (elapsedTime * 1000);
             updateProgress();
         }
 
@@ -558,17 +508,18 @@ Zimmer, T. E. (2016). The importance of education for the unemployed. Indiana Bu
             window.speechSynthesis.cancel();
             speaking = false;
             playButton.innerHTML = '<i class="fas fa-play"></i>';
+            clearInterval(interval);
         }
 
         function updateProgress() {
-            let interval = setInterval(() => {
+            interval = setInterval(() => {
                 if (!speaking) {
                     clearInterval(interval);
                     return;
                 }
-                let elapsedTime = (currentPosition / wordsArray.length) * estimatedDuration;
+                elapsedTime = (Date.now() - startTime) / 1000;
                 currentTimeDisplay.innerText = formatTime(elapsedTime);
-                progressBar.style.width = `${(currentPosition / wordsArray.length) * 100}%`;
+                progressBar.style.width = `${(elapsedTime / estimatedDuration) * 100}%`;
             }, 500);
         }
 
@@ -576,32 +527,19 @@ Zimmer, T. E. (2016). The importance of education for the unemployed. Indiana Bu
             let rect = progressBarContainer.getBoundingClientRect();
             let clickX = event.clientX - rect.left;
             let percentage = clickX / rect.width;
-            let newTime = percentage * estimatedDuration;
-            currentPosition = Math.floor(newTime * wordsPerSecond);
+            elapsedTime = percentage * estimatedDuration;
+            currentPosition = Math.floor(elapsedTime * wordsPerSecond);
+            currentTimeDisplay.innerText = formatTime(elapsedTime);
+            progressBar.style.width = `${percentage * 100}%`;
 
             if (speaking) {
                 stopSpeech();
                 startSpeech();
-            } else {
-                updateProgress();
             }
         });
 
-        speedButtons.forEach(button => {
-            button.addEventListener("click", () => {
-                currentSpeed = parseFloat(button.getAttribute("data-speed"));
-                speech.rate = currentSpeed;
-                wordsPerMinute = 180 * currentSpeed;
-                wordsPerSecond = wordsPerMinute / 60;
-                estimateDuration();
-                speedButtons.forEach(btn => btn.classList.remove("active"));
-                button.classList.add("active");
-
-                if (speaking) {
-                    stopSpeech();
-                    startSpeech();
-                }
-            });
+        window.addEventListener("beforeunload", function () {
+            stopSpeech();
         });
 
         function formatTime(seconds) {
@@ -609,14 +547,6 @@ Zimmer, T. E. (2016). The importance of education for the unemployed. Indiana Bu
             let secs = Math.floor(seconds % 60);
             return `${minutes}:${secs.toString().padStart(2, '0')}`;
         }
-
-        // Reset progress and position on refresh
-        window.onload = function () {
-            stopSpeech();
-            currentPosition = 0;
-            currentTimeDisplay.innerText = "0:00";
-            progressBar.style.width = "0%";
-        };
     </script>
 </body>
 </html>
